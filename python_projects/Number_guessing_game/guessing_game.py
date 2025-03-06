@@ -1,82 +1,79 @@
-import random  # Import the random module for generating random numbers
-import time  # Import time module for delays
-import sys  # Import sys for exiting the game
+import streamlit as st
+import random
 
-# ANSI color codes for better user experience
-RED = "\033[91m"
-GREEN = "\033[92m"
-YELLOW = "\033[93m"
-CYAN = "\033[96m"
-RESET = "\033[0m"
+# Streamlit UI setup
+st.set_page_config(page_title="Number Guessing Game", page_icon="🎯", layout="centered")
 
-
-# Game Introduction
-print(CYAN + "\n🎯 Welcome to the Ultimate Number Guessing Game! 🎯" + RESET)
-print("Guess a number between 50 and 100.") 
-print("Can you guess the correct number? Let's find out!\n")
+st.title("🎯 Number Guessing Game!")
+st.write("Guess a number between **50 and 100**. Can you win?")
 
 # Choose difficulty level
-print(YELLOW + "Choose your difficulty level:" + RESET)
-print("1. Easy (7 attempts)")
-print("2. Medium (5 attempts)")
-print("3. Hard (3 attempts)")
+difficulty = st.selectbox("Select Difficulty:", ["Easy (7 attempts)", "Medium (5 attempts)", "Hard (3 attempts)"])
 
-difficulty = input("Enter 1, 2, or 3: ")
-
-if difficulty == "1":
+# Set attempts based on difficulty
+if difficulty == "Easy (7 attempts)":
     max_attempts = 7
-elif difficulty == "2":
+elif difficulty == "Medium (5 attempts)":
     max_attempts = 5
-elif difficulty == "3":
-    max_attempts = 3
 else:
-    print(RED + "Invalid choice! Defaulting to Medium difficulty." + RESET)
-    max_attempts = 5
+    max_attempts = 3
 
-# Generate a random number between 50 and 100
-number_to_guess = random.randint(50, 100)
+# Initialize session state variables
+if "number_to_guess" not in st.session_state:
+    st.session_state.number_to_guess = random.randint(50, 100)
+    st.session_state.attempts_taken = 0
+    st.session_state.score = 100
+    st.session_state.game_over = False
 
-attempts_taken = 0  # Track attempts
-score = 100  # Start score at 100
+# Display remaining attempts
+st.write(f"**Attempts Remaining:** {max_attempts - st.session_state.attempts_taken}")
 
-# Start the game loop
-while attempts_taken < max_attempts:
-    attempts_taken += 1
-    try:
-        user_guess = int(input("\n🔢 Enter your guess: "))
-    except ValueError:
-        print(RED + "❌ Invalid input! Please enter a number." + RESET)
-        continue
+# Get user input
+user_guess = st.number_input("Enter your guess:", min_value=50, max_value=100, step=1)
 
-    # If the guess is correct
-    if user_guess == number_to_guess:
-        print(GREEN + f"\n🎉 Congratulations! You guessed the number {number_to_guess} in {attempts_taken} attempts!" + RESET)
-        print(f"🏆 Your Score: {score} points")
-        break
+# "Guess" button
+if st.button("Guess"):
+    if st.session_state.game_over:
+        st.warning("Game over! Refresh to play again.")
     else:
-        # Score penalty
-        score -= 10
+        st.session_state.attempts_taken += 1
 
-        # If the player runs out of attempts
-        if attempts_taken == max_attempts:
-            print(RED + f"\n❌ Oops! You ran out of attempts. The number was {number_to_guess}." + RESET)
-            print(f"🏆 Final Score: {score} points")
-            break
-
-        # Provide hints
-        difference = abs(user_guess - number_to_guess)
-
-        if difference >= 20:
-            hint = "❄️ Ice cold!"
-        elif difference >= 10:
-            hint = "🥶 Cold!"
-        elif difference >= 5:
-            hint = "🔥 Getting warm!"
+        if user_guess == st.session_state.number_to_guess:
+            st.success(f"🎉 Correct! You guessed {user_guess} in {st.session_state.attempts_taken} attempts!")
+            st.write(f"🏆 Your Score: {st.session_state.score} points")
+            st.session_state.game_over = True
         else:
-            hint = "🔥🔥 Hot! Almost there!"
+            st.session_state.score -= 10
 
-        if user_guess > number_to_guess:
-            print(YELLOW + f"📉 Too high! {hint} Try again." + RESET)
+            if st.session_state.attempts_taken == max_attempts:
+                st.error(f"❌ Game Over! The correct number was {st.session_state.number_to_guess}.")
+                st.write(f"🏆 Final Score: {st.session_state.score} points")
+                st.session_state.game_over = True
+            else:
+                # Provide hints
+                difference = abs(user_guess - st.session_state.number_to_guess)
+                if difference >= 20:
+                    hint = "❄️ Ice cold!"
+                elif difference >= 10:
+                    hint = "🥶 Cold!"
+                elif difference >= 5:
+                    hint = "🔥 Getting warm!"
+                else:
+                    hint = "🔥🔥 Hot! Almost there!"
+
+                if user_guess > st.session_state.number_to_guess:
+                    st.warning(f"📉 Too high! {hint} Try again.")
+                else:
+                    st.warning(f"📈 Too low! {hint} Try again.")
+
+# Restart button
+if st.button("Restart Game"):
+    st.session_state.number_to_guess = random.randint(50, 100)
+    st.session_state.attempts_taken = 0
+    st.session_state.score = 100
+    st.session_state.game_over = False
+    st.experimental_rerun()
+
         else:
             print(YELLOW + f"📈 Too low! {hint} Try again." + RESET)
 
